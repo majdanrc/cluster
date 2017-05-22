@@ -32,7 +32,7 @@ func newMessage(id, user, text, timestamp string) Message {
 
 	var d int64
 	d, m.Error = strconv.ParseInt(timestamp, 10, 64)
-	m.CreatedAt = time.Unix(d, 0)
+	m.CreatedAt = time.Unix(d, 0).UTC()
 
 	return m
 }
