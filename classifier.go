@@ -1,8 +1,6 @@
 package cluster
 
-import (
-	"time"
-)
+import "time"
 
 type Topic struct {
 	From     time.Time

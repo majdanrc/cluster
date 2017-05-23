@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"sync"
 
 	"github.com/majdanrc/cluster"
 	"github.com/majdanrc/cluster/log"
@@ -27,17 +28,28 @@ func main() {
 		return
 	}
 
-	output := make(chan cluster.ClusteredMessage, 10)
+	var wg sync.WaitGroup
+	output := make(chan cluster.ClusteredMessage)
 
 	inc := cluster.NewReader(chat).Read()
 
-	for ind := 0; ind < 4; ind++ {
-		go cluster.Classify(inc, output, 6)
+	for ind := 0; ind <= 20; ind++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cluster.Classify(inc, output, 6)
+		}()
 	}
 
-	for item := range output {
-		log.Info("nic nie musze", "%v", item)
-	}
+	go func() {
+		for item := range output {
+			log.Info("nic nie musze", "%v", item)
+		}
+	}()
+
+	wg.Wait()
+
+	close(output)
 
 	defer chat.Close()
 }
