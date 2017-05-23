@@ -10,6 +10,19 @@ type Topic struct {
 	Messages []Message
 }
 
-func Classify(m Message, max int) {
+type ClusteredMessage struct {
+	ClNo int
+	Msg  Message
+}
 
+func Classify(mc <-chan Message, oc chan<- ClusteredMessage, max int) {
+	for m := range mc {
+
+		clno := m.CreatedAt.Day()
+
+		oc <- ClusteredMessage{
+			ClNo: clno,
+			Msg:  m,
+		}
+	}
 }

@@ -38,25 +38,27 @@ func newMessage(id, user, text, timestamp string) Message {
 }
 
 type Reader struct {
-	s *bufio.Scanner
+	scanner *bufio.Scanner
 }
 
 func (r Reader) Read() <-chan Message {
 	c := make(chan Message)
 
-	var wg sync.WaitGroup
-	for r.s.Scan() {
-		wg.Add(1)
-		go func(b string) {
-			defer wg.Done()
-			r := strings.Split(b, `,`)
-			c <- newMessage(r[1], r[2], r[3], r[0])
-		}(r.s.Text())
-	}
-
 	go func() {
-		wg.Wait()
-		close(c)
+		var wg sync.WaitGroup
+
+		for r.scanner.Scan() {
+			wg.Add(1)
+			go func(b string) {
+				defer wg.Done()
+				r := strings.Split(b, `,`)
+				c <- newMessage(r[1], r[2], r[3], r[0])
+			}(r.scanner.Text())
+		}
+		go func() {
+			wg.Wait()
+			close(c)
+		}()
 	}()
 
 	return c
@@ -64,6 +66,6 @@ func (r Reader) Read() <-chan Message {
 
 func NewReader(r io.Reader) *Reader {
 	return &Reader{
-		s: bufio.NewScanner(r),
+		scanner: bufio.NewScanner(r),
 	}
 }

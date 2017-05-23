@@ -27,12 +27,16 @@ func main() {
 		return
 	}
 
-	for m := range cluster.NewReader(chat).Read() {
-		if m.Error != nil {
-			log.Error("error.file.line", err.Error())
-		}
+	output := make(chan cluster.ClusteredMessage, 10)
 
-		log.Info("cluster.record", "%v", m)
+	inc := cluster.NewReader(chat).Read()
+
+	for ind := 0; ind < 4; ind++ {
+		go cluster.Classify(inc, output, 6)
+	}
+
+	for item := range output {
+		log.Info("nic nie musze", "%v", item)
 	}
 
 	defer chat.Close()
