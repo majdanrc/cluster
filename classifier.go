@@ -1,26 +1,38 @@
 package cluster
 
-import "time"
-
-type Topic struct {
-	From     time.Time
-	To       time.Time
-	Messages []Message
-}
+import (
+	"math"
+	"strconv"
+	"time"
+)
 
 type ClusteredMessage struct {
-	ClNo int
-	Msg  Message
+	ClusterNo string
+	Msg       Message
 }
 
-func Classify(mc <-chan Message, oc chan<- ClusteredMessage, max int) {
-	for m := range mc {
+var secondsInDay = 24 * 60 * 60
 
-		clno := m.CreatedAt.Day()
+func round(f float64) int {
+	return int(math.Floor(f + .5))
+}
 
-		oc <- ClusteredMessage{
-			ClNo: clno,
-			Msg:  m,
+func Classify(input <-chan Message, output chan<- ClusteredMessage, max int) {
+	for message := range input {
+
+		clusterSeconds := round(float64(secondsInDay) / float64(max))
+
+		itemDate := time.Unix(message.Timestamp, 0).UTC()
+
+		clusterPrefix := strconv.Itoa(itemDate.Year()) + strconv.Itoa(int(itemDate.Month())) + strconv.Itoa(itemDate.Day())
+		secondsSinceMidnight := (itemDate.Hour() * 60 * 60) + (itemDate.Minute() * 60) + itemDate.Second()
+		clusterSlot := secondsSinceMidnight / clusterSeconds
+
+		cluster := clusterPrefix + "_" + strconv.Itoa(clusterSlot)
+
+		output <- ClusteredMessage{
+			ClusterNo: cluster,
+			Msg:       message,
 		}
 	}
 }

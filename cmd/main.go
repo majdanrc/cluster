@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"sync"
 
@@ -12,6 +13,7 @@ import (
 func main() {
 	file := flag.String("file", "", "file of chat logs, each line is a chat log, include timestamp, message ID, sender and content.")
 	max := flag.Int("max", 0, "[optional] max allowed cluster number within a day (24 hours). This parameter allow to control the generated number of cluster within a 24 hours.")
+	par := flag.Int("par", 0, "[optional] number of workers, default 4")
 	flag.Parse()
 
 	if *file == "" {
@@ -21,6 +23,14 @@ func main() {
 
 	log.Info("cluster.parameters.file", "%s", *file)
 	log.Info("cluster.parameters.max", "%d", *max)
+	log.Info("cluster.parameters.par", "%d", *par)
+
+	var maxClusters int
+	if *max > 0 {
+		maxClusters = *max
+	} else {
+		maxClusters = 24
+	}
 
 	chat, err := os.Open(*file)
 	if err != nil {
@@ -28,26 +38,32 @@ func main() {
 		return
 	}
 
+	clusters := make(map[string][]cluster.ClusteredMessage)
+
 	var wg sync.WaitGroup
 	output := make(chan cluster.ClusteredMessage)
 
-	inc := cluster.NewReader(chat).Read()
+	input := cluster.NewReader(chat).Read()
 
 	for ind := 0; ind <= 20; ind++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cluster.Classify(inc, output, 6)
+			cluster.Classify(input, output, maxClusters)
 		}()
 	}
 
 	go func() {
 		for item := range output {
-			log.Info("nic nie musze", "%v", item)
+			clusters[item.ClusterNo] = append(clusters[item.ClusterNo], item)
 		}
 	}()
 
 	wg.Wait()
+
+	for k := range clusters {
+		fmt.Printf("cluster [%s]: count[%d]\n", k, len(clusters[k]))
+	}
 
 	close(output)
 

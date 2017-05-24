@@ -7,32 +7,31 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 type Message struct {
-	ID        string
-	User      string
-	Text      string
-	CreatedAt time.Time
+	Timestamp int64
+	Sender    string
+	MessageID string
+	Content   string
 	Error     error
 }
 
-func newMessage(id, user, text, timestamp string) Message {
+func newMessage(timestamp, sender, messageid, content string) Message {
 	m := Message{
-		ID:   id,
-		User: user,
-		Text: text,
+		Sender:    sender,
+		MessageID: messageid,
+		Content:   content,
 	}
 
-	if id == "" || user == "" || text == "" || timestamp == "" {
-		m.Error = errors.New("id, user, text and time is required")
+	if timestamp == "" || sender == "" || messageid == "" || content == "" {
+		m.Error = errors.New("timestamp, sender, messageid and content are required")
 		return m
 	}
 
 	var d int64
 	d, m.Error = strconv.ParseInt(timestamp, 10, 64)
-	m.CreatedAt = time.Unix(d, 0).UTC()
+	m.Timestamp = d
 
 	return m
 }
@@ -51,8 +50,8 @@ func (r Reader) Read() <-chan Message {
 			wg.Add(1)
 			go func(b string) {
 				defer wg.Done()
-				r := strings.Split(b, `,`)
-				c <- newMessage(r[1], r[2], r[3], r[0])
+				r := strings.Split(b, `;`)
+				c <- newMessage(r[0], r[1], r[2], r[3])
 			}(r.scanner.Text())
 		}
 		go func() {
