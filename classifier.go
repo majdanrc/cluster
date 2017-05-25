@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -21,10 +20,10 @@ func round(f float64) int {
 func Classify(input <-chan Message, max int) <-chan ClusteredMessage {
 	out := make(chan ClusteredMessage)
 
+	clusterSeconds := round(float64(secondsInDay) / float64(max))
+
 	go func() {
 		for message := range input {
-
-			clusterSeconds := round(float64(secondsInDay) / float64(max))
 
 			itemDate := time.Unix(message.Timestamp, 0).UTC()
 
@@ -33,8 +32,6 @@ func Classify(input <-chan Message, max int) <-chan ClusteredMessage {
 			clusterSlot := secondsSinceMidnight / clusterSeconds
 
 			cluster := clusterPrefix + "_" + strconv.Itoa(clusterSlot)
-
-			fmt.Println(cluster)
 
 			out <- ClusteredMessage{
 				ClusterNo: cluster,

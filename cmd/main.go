@@ -31,8 +31,6 @@ func main() {
 
 	clusters := make(map[string][]cluster.ClusteredMessage)
 
-	var wg sync.WaitGroup
-
 	input := cluster.NewReader(chatLog).Read()
 	output := make([]<-chan cluster.ClusteredMessage, workerCount)
 
@@ -43,8 +41,6 @@ func main() {
 	for item := range merge(output) {
 		clusters[item.ClusterNo] = append(clusters[item.ClusterNo], item)
 	}
-
-	wg.Wait()
 
 	for k := range clusters {
 		fmt.Printf("cluster [%s]: count[%d]\n", k, len(clusters[k]))
