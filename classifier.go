@@ -11,7 +11,7 @@ type ClusteredMessage struct {
 	Msg       Message
 }
 
-var secondsInDay = 24 * 60 * 60
+var SecondsInDay = 24 * 60 * 60
 
 func round(f float64) int {
 	return int(math.Floor(f + .5))
@@ -20,7 +20,7 @@ func round(f float64) int {
 func Classify(input <-chan Message, max int) <-chan ClusteredMessage {
 	out := make(chan ClusteredMessage)
 
-	clusterSeconds := round(float64(secondsInDay) / float64(max))
+	clusterSeconds := round(float64(SecondsInDay) / float64(max))
 
 	go func() {
 		for message := range input {

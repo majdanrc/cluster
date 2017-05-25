@@ -23,6 +23,10 @@ func main() {
 	maxClusters := parseParam(*max, 24)
 	workerCount := parseParam(*workers, 4)
 
+	if maxClusters > cluster.SecondsInDay {
+		maxClusters = cluster.SecondsInDay
+	}
+
 	chatLog, err := os.Open(*file)
 	if err != nil {
 		fmt.Printf("%s", err.Error())
