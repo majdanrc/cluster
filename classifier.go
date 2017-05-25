@@ -18,24 +18,31 @@ func round(f float64) int {
 	return int(math.Floor(f + .5))
 }
 
-func Classify(input <-chan Message, output chan<- ClusteredMessage, max int) {
-	for message := range input {
+func Classify(input <-chan Message, max int) <-chan ClusteredMessage {
+	out := make(chan ClusteredMessage)
 
-		clusterSeconds := round(float64(secondsInDay) / float64(max))
+	go func() {
+		for message := range input {
 
-		itemDate := time.Unix(message.Timestamp, 0).UTC()
+			clusterSeconds := round(float64(secondsInDay) / float64(max))
 
-		clusterPrefix := strconv.Itoa(itemDate.Year()) + strconv.Itoa(int(itemDate.Month())) + strconv.Itoa(itemDate.Day())
-		secondsSinceMidnight := (itemDate.Hour() * 60 * 60) + (itemDate.Minute() * 60) + itemDate.Second()
-		clusterSlot := secondsSinceMidnight / clusterSeconds
+			itemDate := time.Unix(message.Timestamp, 0).UTC()
 
-		cluster := clusterPrefix + "_" + strconv.Itoa(clusterSlot)
+			clusterPrefix := strconv.Itoa(itemDate.Year()) + strconv.Itoa(int(itemDate.Month())) + strconv.Itoa(itemDate.Day())
+			secondsSinceMidnight := (itemDate.Hour() * 60 * 60) + (itemDate.Minute() * 60) + itemDate.Second()
+			clusterSlot := secondsSinceMidnight / clusterSeconds
 
-		fmt.Println(cluster)
+			cluster := clusterPrefix + "_" + strconv.Itoa(clusterSlot)
 
-		output <- ClusteredMessage{
-			ClusterNo: cluster,
-			Msg:       message,
+			fmt.Println(cluster)
+
+			out <- ClusteredMessage{
+				ClusterNo: cluster,
+				Msg:       message,
+			}
 		}
-	}
+		close(out)
+	}()
+
+	return out
 }
