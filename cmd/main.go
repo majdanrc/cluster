@@ -34,7 +34,7 @@ func main() {
 		workers = 4
 	}
 
-	chat, err := os.Open(*file)
+	chatLog, err := os.Open(*file)
 	if err != nil {
 		fmt.Printf("%s", err.Error())
 		return
@@ -43,31 +43,34 @@ func main() {
 	clusters := make(map[string][]cluster.ClusteredMessage)
 
 	var wg sync.WaitGroup
-	output := make(chan cluster.ClusteredMessage)
 
-	input := cluster.NewReader(chat).Read()
+	input := cluster.NewReader(chatLog).Read()
+	output := make(chan cluster.ClusteredMessage)
 
 	for ind := 0; ind <= workers; ind++ {
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
 			cluster.Classify(input, output, maxClusters)
+			wg.Done()
 		}()
 	}
 
+	var count int
 	go func() {
 		for item := range output {
 			clusters[item.ClusterNo] = append(clusters[item.ClusterNo], item)
+			count++
+			fmt.Println(count)
 		}
 	}()
 
 	wg.Wait()
 
-	for k := range clusters {
-		fmt.Printf("cluster [%s]: count[%d]\n", k, len(clusters[k]))
-	}
+	// for k := range clusters {
+	// 	fmt.Printf("cluster [%s]: count[%d]\n", k, len(clusters[k]))
+	// }
 
 	close(output)
 
-	defer chat.Close()
+	defer chatLog.Close()
 }

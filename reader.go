@@ -18,22 +18,22 @@ type Message struct {
 }
 
 func newMessage(timestamp, sender, messageid, content string) Message {
-	m := Message{
+	message := Message{
 		Sender:    sender,
 		MessageID: messageid,
 		Content:   content,
 	}
 
 	if timestamp == "" || sender == "" || messageid == "" || content == "" {
-		m.Error = errors.New("timestamp, sender, messageid and content are required")
-		return m
+		message.Error = errors.New("timestamp, sender, messageid and content are required")
+		return message
 	}
 
-	var d int64
-	d, m.Error = strconv.ParseInt(timestamp, 10, 64)
-	m.Timestamp = d
+	var messageTimestamp int64
+	messageTimestamp, message.Error = strconv.ParseInt(timestamp, 10, 64)
+	message.Timestamp = messageTimestamp
 
-	return m
+	return message
 }
 
 type Reader struct {
@@ -41,7 +41,7 @@ type Reader struct {
 }
 
 func (r Reader) Read() <-chan Message {
-	c := make(chan Message)
+	readChannel := make(chan Message)
 
 	go func() {
 		var wg sync.WaitGroup
@@ -51,16 +51,16 @@ func (r Reader) Read() <-chan Message {
 			go func(b string) {
 				defer wg.Done()
 				r := strings.Split(b, `;`)
-				c <- newMessage(r[0], r[1], r[2], r[3])
+				readChannel <- newMessage(r[0], r[1], r[2], r[3])
 			}(r.scanner.Text())
 		}
 		go func() {
 			wg.Wait()
-			close(c)
+			close(readChannel)
 		}()
 	}()
 
-	return c
+	return readChannel
 }
 
 func NewReader(r io.Reader) *Reader {

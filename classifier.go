@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -29,6 +30,8 @@ func Classify(input <-chan Message, output chan<- ClusteredMessage, max int) {
 		clusterSlot := secondsSinceMidnight / clusterSeconds
 
 		cluster := clusterPrefix + "_" + strconv.Itoa(clusterSlot)
+
+		fmt.Println(cluster)
 
 		output <- ClusteredMessage{
 			ClusterNo: cluster,
